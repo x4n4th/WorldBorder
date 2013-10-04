@@ -13,6 +13,7 @@ import org.bukkit.World;
 
 public class WorldFillTask implements Runnable
 {
+  private transient WorldFillListener listener;
 	// general task-related reference data
 	private transient Server server = null;
 	private transient World world = null;
@@ -53,13 +54,14 @@ public class WorldFillTask implements Runnable
 	private transient int reportNum = 0;
 
 
-	public WorldFillTask(Server theServer, Player player, String worldName, int fillDistance, int chunksPerRun, int tickFrequency)
+	public WorldFillTask(Server theServer, Player player, WorldFillListener listener, String worldName, int fillDistance, int chunksPerRun, int tickFrequency)
 	{
 		this.server = theServer;
 		this.notifyPlayer = player;
 		this.fillDistance = fillDistance;
 		this.tickFrequency = tickFrequency;
 		this.chunksPerRun = chunksPerRun;
+		this.listener = listener;
 
 		this.world = server.getWorld(worldName);
 		if (this.world == null)
@@ -302,18 +304,21 @@ public class WorldFillTask implements Runnable
 		reportProgress();
 		world.save();
 		sendMessage("task successfully completed!");
+		this.listener.onFinish();
 		this.stop();
 	}
 
 	// for cancelling prematurely
 	public void cancel()
 	{
+	  this.listener.onCancel();
 		this.stop();
 	}
 
 	// we're done, whether finished or cancelled
 	private void stop()
 	{
+	  this.listener.onStop();
 		if (server == null)
 			return;
 
@@ -329,6 +334,7 @@ public class WorldFillTask implements Runnable
 			if (!originalChunks.contains(coord))
 				world.unloadChunkRequest(coord.x, coord.z);
 		}
+		this.listener.onChunksUnloaded();
 	}
 
 	// is this task still valid/workable?
@@ -340,13 +346,14 @@ public class WorldFillTask implements Runnable
 	// handle pausing/unpausing the task
 	public void pause()
 	{
-		if(this.pausedForMemory)
+		if(this.pausedForMemory){
+		  this.listener.onPausedForMemory();
 			pause(false);
-		else
+		} else {
 			pause(!this.paused);
+		}
 	}
-	public void pause(boolean pause)
-	{
+	public void pause(boolean pause) { this.listener.onPause();
 		if (this.pausedForMemory && !pause)
 			this.pausedForMemory = false;
 		else
@@ -374,6 +381,8 @@ public class WorldFillTask implements Runnable
 		sendMessage(reportNum + " more chunks processed (" + (reportTotal + reportNum) + " total, ~" + Config.coord.format(perc) + "%" + ")");
 		reportTotal += reportNum;
 		reportNum = 0;
+		
+		this.listener.onUpdate(perc);
 
 		reportCounter++;
 		// go ahead and save world to disk every 30 seconds or so, just in case; can take a couple of seconds or more, so we don't want to run it too often
@@ -450,4 +459,20 @@ public class WorldFillTask implements Runnable
 	{
 		return world.getName();
 	}
+  public static abstract interface WorldFillListener
+  {
+    public abstract void onFinish();
+
+    public abstract void onCancel();
+
+    public abstract void onStop();
+
+    public abstract void onChunksUnloaded();
+
+    public abstract void onPausedForMemory();
+
+    public abstract void onPause();
+
+    public abstract void onUpdate(double paramDouble);
+  }
 }

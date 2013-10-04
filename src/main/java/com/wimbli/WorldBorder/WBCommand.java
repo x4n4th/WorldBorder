@@ -978,7 +978,7 @@ public class WBCommand implements CommandExecutor
 			else
 				ticks = 20 / fillFrequency;
 				
-			Config.fillTask = new WorldFillTask(plugin.getServer(), player, fillWorld, fillPadding, repeats, ticks);
+			Config.fillTask = new WorldFillTask(plugin.getServer(), player, null, fillWorld, fillPadding, repeats, ticks);
 			if (Config.fillTask.valid())
 			{
 				int task = plugin.getServer().getScheduler().scheduleSyncRepeatingTask(plugin, Config.fillTask, ticks, ticks);

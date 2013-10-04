@@ -379,7 +379,7 @@ public class Config
 
 	public static void RestoreFillTask(String world, int fillDistance, int chunksPerRun, int tickFrequency, int x, int z, int length, int total)
 	{
-		fillTask = new WorldFillTask(plugin.getServer(), null, world, fillDistance, chunksPerRun, tickFrequency);
+		fillTask = new WorldFillTask(plugin.getServer(), null, null, world, fillDistance, chunksPerRun, tickFrequency);
 		if (fillTask.valid())
 		{
 			fillTask.continueProgress(x, z, length, total);
